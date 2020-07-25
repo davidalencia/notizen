@@ -72,33 +72,37 @@ class Notebook {
     this.points.push({ x, y })
     return {x, y, pressure}
   }
-  pen({color, strokeSize}){
+  pen({color, strokeSize, fingerPaint}){
     
     this.ctx.strokeStyle = color
     this.strokeSize = strokeSize
 
     this.begin = ({x, y, pressure}) =>{
-      this.lineWidth = Math.log(pressure + 1) * this.strokeSize
-      this.ctx.lineWidth = this.lineWidth
-      this.ctx.beginPath()
-      this.ctx.moveTo(x, y)
+      if(this.isPen || fingerPaint){
+        this.lineWidth = Math.log(pressure + 1) * this.strokeSize
+        this.ctx.lineWidth = this.lineWidth
+        this.ctx.beginPath()
+        this.ctx.moveTo(x, y)
+      }
     }
     this.move = ({x, y, pressure}) =>{
-      this.lineWidth = (Math.log(pressure + 1) * this.strokeSize * 0.2 + this.lineWidth * 0.8)
+      if(this.isPen || fingerPaint){
+        this.lineWidth = (Math.log(pressure + 1) * this.strokeSize * 0.2 + this.lineWidth * 0.8)
 
-      if (this.points.length >= 3) {
-        const l = this.points.length - 1
-        const xc = (this.points[l].x + this.points[l - 1].x) / 2
-        const yc = (this.points[l].y + this.points[l - 1].y) / 2
-        this.ctx.lineWidth = this.lineWidth
-        this.ctx.quadraticCurveTo(this.points[l - 1].x, this.points[l - 1].y, xc, yc)
-        this.ctx.stroke()
-        this.ctx.beginPath()
-        this.ctx.moveTo(xc, yc)
+        if (this.points.length >= 3) {
+          const l = this.points.length - 1
+          const xc = (this.points[l-2].x + this.points[l - 1].x) / 2
+          const yc = (this.points[l-2].y + this.points[l - 1].y) / 2
+          this.ctx.lineWidth = this.lineWidth
+          this.ctx.quadraticCurveTo(this.points[l].x, this.points[l].y, xc, yc)
+          this.ctx.stroke()
+          this.ctx.beginPath()
+          this.ctx.moveTo(xc, yc)
+        }
       }
     }
     this.end = ({x, y}) =>{
-      if (this.points.length >= 3) {
+      if (this.points.length >= 3 && (this.isPen || fingerPaint)) {
         const l = this.points.length - 1
         this.ctx.quadraticCurveTo(this.points[l].x, this.points[l].y, x, y)
         this.ctx.stroke()
@@ -110,5 +114,6 @@ class Notebook {
 let nb = new Notebook(canvas)
 nb.pen({
   color: "black",
-  strokeSize: 10
+  strokeSize: 2,
+  fingerPaint: true
 })
