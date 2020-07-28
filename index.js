@@ -1,28 +1,23 @@
 const canvas = document.querySelectorAll('canvas')[0]
-const ctx = canvas.getContext('2d')
-let lineWidth = 0
-let isMousedown = false
-let points = []
-
 canvas.width = window.innerWidth
 canvas.height = window.innerHeight
-
-
-
-//console.log(e.touches[0].radiusX);
-
 
 class Notebook {
   constructor(canvas){
     this.canvas = canvas
     this.ctx = canvas.getContext('2d')
-    this.points = []
     this.isMousedown = false
     this.isPen = false
     this.lineWidth = 0
     this.begin = (state)=>{}
     this.move = (state)=>{}
     this.end = (state)=>{}
+
+
+    this.ctx.globalAlpha = 0.003;
+    this.ctx.fillRect(0,0,canvas.width,canvas.height)
+    this.ctx.globalAlpha = 1;
+
 
     this.ctx.lineCap = 'round'
     this.ctx.lineJoin = 'round'
@@ -31,16 +26,14 @@ class Notebook {
 
     for (const ev of ["touchstart", "mousedown"]) {
       canvas.addEventListener(ev, function (e) {  
-        this.isPen = e.touches[0].radiusX == 0;  
-        nb.isMousedown = true
+        this.isPen = e.touches? e.touches[0].radiusX == 0: false;  
         nb.begin(nb.data(e))
       })
     }
 
     for (const ev of ['touchmove', 'mousemove']) {
       canvas.addEventListener(ev, function (e) {
-        this.isPen = e.touches[0].radiusX == 0;   
-        if (!nb.isMousedown) return
+        this.isPen = e.touches? e.touches[0].radiusX == 0: false;   
         e.preventDefault()
         nb.move(nb.data(e))
       })
@@ -48,7 +41,6 @@ class Notebook {
 
     for (const ev of ['touchend', 'touchleave', 'mouseup']) {
       canvas.addEventListener(ev, function (e) {
-        nb.isMousedown = false
         nb.end(nb.data(e))
         nb.points = []
       })
@@ -69,11 +61,10 @@ class Notebook {
       x = e.pageX
       y = e.pageY
     }
-    this.points.push({ x, y })
+
     return {x, y, pressure}
   }
   pen({color, strokeSize, fingerPaint}){
-    
     this.ctx.strokeStyle = color
     this.strokeSize = strokeSize
 
@@ -82,30 +73,24 @@ class Notebook {
         this.lineWidth = Math.log(pressure + 1) * this.strokeSize
         this.ctx.lineWidth = this.lineWidth
         this.ctx.beginPath()
+        this.ctx.arc(x, y, strokeSize/3, 0, 2 * Math.PI, true);
+        this.ctx.stroke()
         this.ctx.moveTo(x, y)
+        
       }
     }
     this.move = ({x, y, pressure}) =>{
       if(this.isPen || fingerPaint){
         this.lineWidth = (Math.log(pressure + 1) * this.strokeSize * 0.2 + this.lineWidth * 0.8)
-
-        if (this.points.length >= 3) {
-          const l = this.points.length - 1
-          const xc = (this.points[l-2].x + this.points[l - 1].x) / 2
-          const yc = (this.points[l-2].y + this.points[l - 1].y) / 2
-          this.ctx.lineWidth = this.lineWidth
-          this.ctx.quadraticCurveTo(this.points[l].x, this.points[l].y, xc, yc)
-          this.ctx.stroke()
-          this.ctx.beginPath()
-          this.ctx.moveTo(xc, yc)
-        }
+        this.ctx.lineTo(x,y);
+        this.ctx.stroke()
       }
     }
     this.end = ({x, y}) =>{
-      if (this.points.length >= 3 && (this.isPen || fingerPaint)) {
-        const l = this.points.length - 1
-        this.ctx.quadraticCurveTo(this.points[l].x, this.points[l].y, x, y)
+      if (this.isPen || fingerPaint) {
+        this.ctx.lineTo(x,y);
         this.ctx.stroke()
+      
       }
     }
   }
