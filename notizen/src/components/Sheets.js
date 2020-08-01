@@ -47,62 +47,109 @@ const Sheets = () => {
       resolution: devicePixelRatio
     });
     divRef.current.appendChild(app.view);
- 
 
-
-
-    ///--------------------PEN----------------------------------
     const trailTexture = PIXI.Texture.from('images/eraser.svg');
-    const historyX = [];
-    const historyY = [];
-    // historySize determines how long the trail will be.
-    const historySize = 50;
-    // ropeSize determines how smooth the trail will be.
-    const ropeSize = 100;
-    const points = [];
     
-    // Create history array.
-    for (let i = 0; i < historySize; i++) {
-        historyX.push(0);
-        historyY.push(0);
-    }
-    // Create rope points.
-    for (let i = 0; i < ropeSize; i++) {
-        points.push(new PIXI.Point(0, 0));
-    }
+    app.renderer.plugins.interaction.on('pointerdown', function (event){
+      this.historyX = [];
+      this.historyY = [];
+      this.historySize = 100;
+      this.ropeSize = 50;
+      this.points = [];
+      
+      const newPosition = event.data.global;
+      const x = newPosition.x
+      const y = newPosition.y
+      for (let i = 0; i < this.historySize; i++) {
+        this.historyX.push(x);
+        this.historyY.push(y);
+      }
+      // Create rope points.
+      for (let i = 0; i < this.ropeSize; i++) {
+        this.points.push(new PIXI.Point(x, y));
+      }
+      
+      // Create the rope
+      const rope = new PIXI.SimpleRope(trailTexture, this.points);
+      
+      // Set the blendmode
+      rope.blendmode = PIXI.BLEND_MODES.ADD;
+      
+      app.stage.addChild(rope);
+    })
+
+    app.renderer.plugins.interaction.on('pointermove', function(event) {
+      let newPosition = event.data.global
+  //    this.historyX.pop();
+      this.historyX.unshift(newPosition.x);
+    //  this.historyY.pop();
+      this.historyY.unshift(newPosition.y);
+      // Update the points to correspond with history.
+      for (let i = 0; i < this.ropeSize; i++) {
+          const p = this.points[i];
+  
+          // Smooth the curve with cubic interpolation to prevent sharp edges.
+          const ix = cubicInterpolation(this.historyX, i / this.ropeSize * this.historyX.length);
+          const iy = cubicInterpolation(this.historyY, i / this.ropeSize * this.historyY.length);
+  
+          p.x = ix;
+          p.y = iy;
+      }
+    })
     
-    // Create the rope
-    const rope = new PIXI.SimpleRope(trailTexture, points);
+
+    // ///--------------------PEN----------------------------------
+    // const trailTexture = PIXI.Texture.from('images/eraser.svg');
+    // const historyX = [];
+    // const historyY = [];
+    // // historySize determines how long the trail will be.
+    // const historySize = 10;
+    // // ropeSize determines how smooth the trail will be.
+    // const ropeSize = 100;
+    // const points = [];
     
-    // Set the blendmode
-    rope.blendmode = PIXI.BLEND_MODES.ADD;
+    // // Create history array.
+    // for (let i = 0; i < historySize; i++) {
+    //     historyX.push(0);
+    //     historyY.push(0);
+    // }
+    // // Create rope points.
+    // for (let i = 0; i < ropeSize; i++) {
+    //     points.push(new PIXI.Point(0, 0));
+    // }
     
-    app.stage.addChild(rope);
+    // // Create the rope
+    // const rope = new PIXI.SimpleRope(trailTexture, points);
+    
+    // // Set the blendmode
+    // rope.blendmode = PIXI.BLEND_MODES.ADD;
+    
+    // app.stage.addChild(rope);
 
     
-    // Listen for animate update
-    app.ticker.add((delta) => {
-        // Read mouse points, this could be done also in mousemove/touchmove update. For simplicity it is done here for now.
-        // When implementing this properly, make sure to implement touchmove as interaction plugins mouse might not update on certain devices.
-        const mouseposition = app.renderer.plugins.interaction.mouse.global;
+    // // Listen for animate update
+    // app.ticker.add((delta) => {
+    //     // Read mouse points, this could be done also in mousemove/touchmove update. For simplicity it is done here for now.
+    //     // When implementing this properly, make sure to implement touchmove as interaction plugins mouse might not update on certain devices.
+    //     const mouseposition = app.renderer.plugins.interaction.mouse.global;
     
-        // Update the mouse values to history
-        historyX.pop();
-        historyX.unshift(mouseposition.x);
-        historyY.pop();
-        historyY.unshift(mouseposition.y);
-        // Update the points to correspond with history.
-        for (let i = 0; i < ropeSize; i++) {
-            const p = points[i];
+    //     // Update the mouse values to history
+    //     historyX.pop();
+    //     historyX.unshift(mouseposition.x);
+    //     historyY.pop();
+    //     historyY.unshift(mouseposition.y);
+    //     // Update the points to correspond with history.
+    //     for (let i = 0; i < ropeSize; i++) {
+    //         const p = points[i];
     
-            // Smooth the curve with cubic interpolation to prevent sharp edges.
-            const ix = cubicInterpolation(historyX, i / ropeSize * historySize);
-            const iy = cubicInterpolation(historyY, i / ropeSize * historySize);
+    //         // Smooth the curve with cubic interpolation to prevent sharp edges.
+    //         const ix = cubicInterpolation(historyX, i / ropeSize * historySize);
+    //         const iy = cubicInterpolation(historyY, i / ropeSize * historySize);
     
-            p.x = ix;
-            p.y = iy;
-        }
-    });
+    //         p.x = ix;
+    //         p.y = iy;
+    //     }
+    // });
   }, [])
 
   return (
