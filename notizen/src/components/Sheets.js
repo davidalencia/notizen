@@ -48,53 +48,25 @@ const Sheets = () => {
     });
     divRef.current.appendChild(app.view);
 
-    const trailTexture = PIXI.Texture.from('images/eraser.svg');
+    const trailTexture = PIXI.Texture.from('images/dot.svg');
     
     app.renderer.plugins.interaction.on('pointerdown', function (event){
-      this.historyX = [];
-      this.historyY = [];
-      this.historySize = 100;
-      this.ropeSize = 50;
-      this.points = [];
-      
-      const newPosition = event.data.global;
-      const x = newPosition.x
-      const y = newPosition.y
-      for (let i = 0; i < this.historySize; i++) {
-        this.historyX.push(x);
-        this.historyY.push(y);
-      }
-      // Create rope points.
-      for (let i = 0; i < this.ropeSize; i++) {
-        this.points.push(new PIXI.Point(x, y));
-      }
-      
-      // Create the rope
-      const rope = new PIXI.SimpleRope(trailTexture, this.points);
-      
-      // Set the blendmode
-      rope.blendmode = PIXI.BLEND_MODES.ADD;
-      
-      app.stage.addChild(rope);
+      const pos = event.data.global
+      this.graph = new PIXI.Graphics()
+      this.graph.lineStyle(1, 0x0, 1);
+      this.graph.moveTo(pos.x, pos.y)
     })
 
     app.renderer.plugins.interaction.on('pointermove', function(event) {
-      let newPosition = event.data.global
-  //    this.historyX.pop();
-      this.historyX.unshift(newPosition.x);
-    //  this.historyY.pop();
-      this.historyY.unshift(newPosition.y);
-      // Update the points to correspond with history.
-      for (let i = 0; i < this.ropeSize; i++) {
-          const p = this.points[i];
-  
-          // Smooth the curve with cubic interpolation to prevent sharp edges.
-          const ix = cubicInterpolation(this.historyX, i / this.ropeSize * this.historyX.length);
-          const iy = cubicInterpolation(this.historyY, i / this.ropeSize * this.historyY.length);
-  
-          p.x = ix;
-          p.y = iy;
-      }
+      const pos = event.data.global
+      this.graph.lineTo(pos.x, pos.y)
+     // this.graph.moveTo(pos.x, pos.y)
+
+    })
+
+    app.renderer.plugins.interaction.on('pointerup', function(event) {
+      // const pos = event.data.global
+      app.stage.addChild(this.graph)
     })
     
 
