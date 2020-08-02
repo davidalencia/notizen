@@ -51,22 +51,60 @@ const Sheets = () => {
     const trailTexture = PIXI.Texture.from('images/dot.svg');
     
     app.renderer.plugins.interaction.on('pointerdown', function (event){
+      this.init = (pos) =>{ 
+        this.counter = 1
+        this.historyX = [];
+        this.historyY = [];
+        this.historySize = 10;
+        this.ropeSize = 100;
+        this.points = [];
+        for (let i = 0; i < this.historySize; i++) {
+          this.historyX.push(pos.x);
+          this.historyY.push(pos.y);
+        }
+        for (let i = 0; i < this.ropeSize; i++) {
+          this.points.push(new PIXI.Point(pos.x, pos.y));
+        }
+        const rope = new PIXI.SimpleRope(trailTexture, this.points, 5);
+        rope.blendmode = PIXI.BLEND_MODES.ADD;
+        app.stage.addChild(rope);
+      }
       const pos = event.data.global
-      this.graph = new PIXI.Graphics()
-      this.graph.lineStyle(1, 0x0, 1);
-      this.graph.moveTo(pos.x, pos.y)
+      this.init(pos)
     })
 
     app.renderer.plugins.interaction.on('pointermove', function(event) {
       const pos = event.data.global
-      this.graph.lineTo(pos.x, pos.y)
-     // this.graph.moveTo(pos.x, pos.y)
+      if(this.counter==5){
+        let pPoint = new PIXI.Point(this.historyX[1], this.historyY[1])
+        this.init(new PIXI.Point(this.historyX[0], this.historyY[0]))
+        this.counter++
+        this.historyX[1] = pPoint.x
+        this.historyY[1] = pPoint.y
+      }
+     
+      this.historyX.pop();
+      this.historyX.unshift(pos.x);
+      this.historyY.pop();
+      this.historyY.unshift(pos.y);
+      // Update the points to correspond with history.
+      for (let i = 0; i < this.ropeSize; i++) {
+          const p = this.points[i];
+  
+          // Smooth the curve with cubic interpolation to prevent sharp edges.
+          const ix = cubicInterpolation(this.historyX, i / this.ropeSize * this.historySize);
+          const iy = cubicInterpolation(this.historyY, i / this.ropeSize * this.historySize);
+  
+          p.x = ix;
+          p.y = iy;
+      }
+      this.counter++
 
     })
 
     app.renderer.plugins.interaction.on('pointerup', function(event) {
       // const pos = event.data.global
-      app.stage.addChild(this.graph)
+      //app.stage.addChild(this.graph)
     })
     
 
